@@ -1,63 +1,101 @@
-$(function initializeMap (){
+$(document)
+	.ready(function () {
+		var itinerary = {
+			1: {
+				status: true,
+			},
+		};
+		var currentMap = initializeMap();
 
-  var graceHopperAcademy = new google.maps.LatLng(40.705086, -74.009151);
+		function makeOptions(data, id) {
+			data.forEach(function (item) {
+				$(id)
+					.append("<option>" + item.name + "</option>")
+			})
+		}
+		makeOptions(hotels, "#hotel-choices");
+		makeOptions(restaurants, "#restaurant-choices");
+		makeOptions(activities, "#activity-choices");
 
-  var styleArr = [{
-    featureType: 'landscape',
-    stylers: [{ saturation: -100 }, { lightness: 60 }]
-  }, {
-    featureType: 'road.local',
-    stylers: [{ saturation: -100 }, { lightness: 40 }, { visibility: 'on' }]
-  }, {
-    featureType: 'transit',
-    stylers: [{ saturation: -100 }, { visibility: 'simplified' }]
-  }, {
-    featureType: 'administrative.province',
-    stylers: [{ visibility: 'off' }]
-  }, {
-    featureType: 'water',
-    stylers: [{ visibility: 'on' }, { lightness: 30 }]
-  }, {
-    featureType: 'road.highway',
-    elementType: 'geometry.fill',
-    stylers: [{ color: '#ef8c25' }, { lightness: 40 }]
-  }, {
-    featureType: 'road.highway',
-    elementType: 'geometry.stroke',
-    stylers: [{ visibility: 'off' }]
-  }, {
-    featureType: 'poi.park',
-    elementType: 'geometry.fill',
-    stylers: [{ color: '#b6c54c' }, { lightness: 40 }, { saturation: -40 }]
-  }];
+		function findPlace(name, database) {
+			var location;
+			database.forEach(function (place) {
+				if(place.name === name) {
+					location = place.place.location;
+				}
+			})
+			return location;
+		}
 
-  var mapCanvas = document.getElementById('map-canvas');
 
-  var currentMap = new google.maps.Map(mapCanvas, {
-    center: graceHopperAcademy,
-    zoom: 13,
-    mapTypeId: google.maps.MapTypeId.ROADMAP,
-    styles: styleArr
-  });
+		function findStatus() {
+			var allDays = Object.keys(itinerary)
+			var day;
+			allDays.forEach(function (eachDay) {
+				if(itinerary[eachDay].status === true) {
+					day = eachDay;
+				}
+			})
+			return day;
+		}
 
-  var iconURLs = {
-    hotel: '/images/lodging_0star.png',
-    restaurant: '/images/restaurant.png',
-    activity: '/images/star-3.png'
-  };
+		function addChoice(addButtonId, optionId, planId, iconCategory, database) {
+			$(addButtonId)
+				.on("click", function () {
+					var item = $(optionId)
+						.val();
+					var finalChoice = "<span class='title'>" + item + "<button class='btn btn-xs btn-danger remove btn-circle'>x</button></span>"
+					$(planId)
+						.append(finalChoice);
+					var coords = findPlace(item, database);
+					drawMarker(iconCategory, coords, currentMap);
+					var day = findStatus();
+					itinerary[day][item] = coords;
+				})
+		}
+		addChoice("#hotel-add", "#hotel-choices", "#my-hotel", "hotel", hotels);
+		addChoice("#restaurant-add", "#restaurant-choices", "#my-restaurant", "restaurant", restaurants);
+		addChoice("#activity-add", "#activity-choices", "#my-activity", "activity", activities);
 
-  function drawMarker (type, coords) {
-    var latLng = new google.maps.LatLng(coords[0], coords[1]);
-    var iconURL = iconURLs[type];
-    var marker = new google.maps.Marker({
-      icon: iconURL,
-      position: latLng
-    });
-    marker.setMap(currentMap);
-  }
+		$("body")
+			.on("click", ".remove", function () {
+				var placeName = $(this)
+					.closest(".title")
+					.text()
 
-  drawMarker('hotel', [40.705137, -74.007624]);
-  drawMarker('restaurant', [40.705137, -74.013940]);
-  drawMarker('activity', [40.716291, -73.995315]);
+				$(this)
+					.closest(".title")
+					.remove();
 
-});
+				var day = findStatus(); //returns a number with the day
+				var coords = itinerary[day][placeName] //array of coords
+				removeMarker(coords);
+			})
+
+		$('#day-add')
+			.on('click', function () {
+				var dayNumber = Object.keys(itinerary)
+					.length + 1;
+				itinerary[dayNumber] = {};
+				var dayId = dayNumber.toString();
+				$('<button class="btn btn-circle day-btn day" id=' + dayId + '>' + dayNumber + '</button>')
+					.insertBefore('#day-add');
+			})
+
+		$(".day-buttons")
+			.on("click", ".day", function () {
+				var allDays = Object.keys(itinerary)
+				allDays.forEach(function (day) {
+					itinerary[day].status = false;
+				})
+				var id = $(this)
+					.attr("id");
+				$("#dayNum")
+					.html("Day " + id)
+
+				itinerary[+id].status = true;
+
+
+			})
+
+	})
