@@ -20,6 +20,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // statically serve front-end dependencies
 app.use('/random', express.static(__dirname + '/node_modules/bootstrap/dist'));
 app.use('/jquery', express.static(__dirname + '/node_modules/jquery/dist'));
+app.use('/functions', express.static(__dirname + '/jquery'));
 
 // serve any other static files
 app.use(express.static(__dirname + '/public'));
